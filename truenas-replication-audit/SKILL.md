@@ -12,7 +12,7 @@ description: Verify TrueNAS→DR ZFS replication is current, and run incremental
 - Middleware handles the daily schedule (4 replication tasks at 03:00 + snapshot tasks, 14-day retention, naming `auto-%Y-%m-%d_%H-%M`). The audit here is for ad-hoc verification before risky work.
 
 ## Audit
-Compare the newest common snapshot between source and DR for each tracked dataset and print the lag in days. Lag > 7 days = stale. Per-dataset classes matter: apps and ix-apps are daily; big media datasets are monthly (lag up to ~31 days is normal).
+Run `scripts/replication-audit.sh` with `SRC` and `DST` set (ssh targets; both required). It derives the dataset list from the middleware (`replication.query`), so nothing is hardcoded, then compares the newest common snapshot per dataset and prints the lag in hours. The task's own schedule sets the limit: daily 26 h, monthly 768 h (31 days plus slack), manual tasks are informational, and a **disabled task is always a failure**. Exit codes: 0 all current, 1 something stale/missing/disabled, 2 a host is unreachable or the task list could not be read. `PAIRS="src:dst ..."` overrides the middleware query. It answers "are the replication tasks current?", not "is any dataset left uncovered by a task?".
 
 ## Sync (incremental)
 1. Take `zfs snapshot -r <ds>@auto-<date>` on the source.
